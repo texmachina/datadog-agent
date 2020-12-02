@@ -34,6 +34,8 @@ GIMME_ENV_VARS = ['GOROOT', 'PATH']
 
 DATADOG_AGENT_EMBEDDED_PATH = '/opt/datadog-agent/embedded'
 
+is_windows = os.name == "nt"
+
 
 @task
 def build(
@@ -45,7 +47,7 @@ def build(
     python_runtimes='3',
     with_bcc=True,
     go_mod="vendor",
-    windows=False,
+    windows=is_windows,
     arch="x64",
     embedded_path=DATADOG_AGENT_EMBEDDED_PATH,
     bundle_ebpf=False,
