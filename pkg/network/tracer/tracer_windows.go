@@ -73,9 +73,9 @@ func NewTracer(config *config.Config) (*Tracer, error) {
 		stopChan:        make(chan struct{}),
 		timerInterval:   defaultPollInterval,
 		state:           state,
-		reverseDNS:      network.NewNullReverseDNS(),
 		connStatsActive: network.NewDriverBuffer(512),
 		connStatsClosed: network.NewDriverBuffer(512),
+		reverseDNS:      network.NewDnsSnooperWindows(di),
 	}
 
 	go tr.expvarStats(tr.stopChan)
@@ -101,11 +101,6 @@ func (t *Tracer) expvarStats(exit <-chan struct{}) {
 		case <-exit:
 			return
 		default:
-
-			log.Info("DNS...")
-
-			log.Info("DNS: %s", t.driverInterface.GetDNS())
-
 			stats, err := t.GetStats()
 			if err != nil {
 				continue

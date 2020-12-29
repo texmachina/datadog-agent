@@ -310,7 +310,8 @@ func resizeDriverBuffer(compareSize int, buffer []uint8) []uint8 {
 }
 
 
-func (di *DriverInterface) GetDNS() []string {
+// GetDNS returns a raw IP packet that wraps a DNS packet
+func (di *DriverInterface) GetDNS() []byte {
 
 	buffer := make([]byte, 2048)
 	var bytesRead uint32
@@ -318,16 +319,23 @@ func (di *DriverInterface) GetDNS() []string {
 	_ = windows.ReadFile(di.driverDNSHandle.handle, buffer, &bytesRead, nil)
 
 	if bytesRead == 0 {
-		return []string{"read nothing..."}
+		log.Errorf("read nothing")
+		return nil
 	}
 
 	// TODO: check if err is windows.ERROR_MORE_DATA
- 	bs := buffer[0:]
-	fph := (*C.struct_filterPacketHeader)( unsafe.Pointer(&(bs[0])))
 
-	s := fmt.Sprintf("pktSize: %d, ownerPid: %d", fph.pktSize, fph.ownerPid) 
+	// read a filter packet header
+	// fph := (*C.struct_filterPacketHeader)(unsafe.Pointer(&(buffer[0])))
 
-	return []string{s}
+	// read an ip packet header
+	start := C.sizeof_struct_filterPacketHeader
+	// var iph ipv4.Header
+	// if err := iph.Parse(buffer[start:]); err != nil {
+	// 	log.Errorf("error parsing ip header: %v", err)
+	// }
+
+	return buffer[start:]
 }
 
 
@@ -481,7 +489,7 @@ func createDNSFilters() ([]C.struct__filterDefinition, error) {
 
 			filterVersion: C.DD_NPMDRIVER_SIGNATURE,
 			size: C.sizeof_struct__filterDefinition,
-			filterLayer: 1, // TODO: C.FILTER_LAYER_TRANSPORT
+			filterLayer: C.FILTER_LAYER_TRANSPORT,
 			af: windows.AF_INET,
 			remotePort: 53,
 			v4InterfaceIndex: (C.ulonglong)(iface.Index), 
