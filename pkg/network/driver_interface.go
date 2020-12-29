@@ -187,7 +187,7 @@ func (di *DriverInterface) setupDNSHandle() error {
 		return err
 	}
 
-	if err := dh.setFilters(filters); err != nil {
+	if err := dh.setDataFilters(filters); err != nil {
 		return err
 	}
 
@@ -358,6 +358,22 @@ func (dh *DriverHandle) setFilters(filters []C.struct__filterDefinition) error {
 	return nil
 }
 
+func (dh *DriverHandle) setDataFilters(filters []C.struct__filterDefinition) error {
+	var id int64
+	for _, filter := range filters {
+		err := windows.DeviceIoControl(dh.handle,
+			C.DDNPMDRIVER_IOCTL_SET_DATA_FILTER,
+			(*byte)(unsafe.Pointer(&filter)),
+			uint32(unsafe.Sizeof(filter)),
+			(*byte)(unsafe.Pointer(&id)),
+			uint32(unsafe.Sizeof(id)), nil, nil)
+		if err != nil {
+			return fmt.Errorf("failed to set filter: %v", err)
+		}
+	}
+	return nil
+}
+
 func (dh *DriverHandle) getStatsForHandle() (map[string]int64, error) {
 	var (
 		bytesReturned uint32
@@ -462,9 +478,10 @@ func createDNSFilters() ([]C.struct__filterDefinition, error) {
 
 	for _, iface := range ifaces {
 		filters = append(filters, C.struct__filterDefinition{
+
 			filterVersion: C.DD_NPMDRIVER_SIGNATURE,
 			size: C.sizeof_struct__filterDefinition,
-			filterLayer: 0, // TODO: C.FILTER_LAYER_IPPACKET,
+			filterLayer: 1, // TODO: C.FILTER_LAYER_TRANSPORT
 			af: windows.AF_INET,
 			remotePort: 53,
 			v4InterfaceIndex: (C.ulonglong)(iface.Index), 
