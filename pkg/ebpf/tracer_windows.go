@@ -76,6 +76,7 @@ func NewTracer(config *Config) (*Tracer, error) {
 	}
 
 	go tr.expvarStats(tr.stopChan)
+	
 	return tr, nil
 }
 
@@ -97,6 +98,11 @@ func (t *Tracer) expvarStats(exit <-chan struct{}) {
 		case <-exit:
 			return
 		default:
+
+			log.Info("DNS...")
+
+			log.Info("DNS: %s", t.driverInterface.GetDNS())
+
 			stats, err := t.GetStats()
 			if err != nil {
 				continue
