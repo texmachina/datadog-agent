@@ -21,13 +21,11 @@ func NewDnsSnooperWindows(di *DriverInterface) *dnsSnooperWindows {
 	snooper := &dnsSnooperWindows{
 		cache: newReverseDNSCache(10000, 10*time.Minute, time.Minute),
 		di:    di,
-		parser: newDNSParser(true, false), // TODO: config
+		parser: newDNSParser(false, true), // TODO: config
 	}
 
 	go snooper.Run()
 	return snooper
-
-
 }
 
 
@@ -57,8 +55,14 @@ func (d *dnsSnooperWindows) Run() {
 		dns := d.di.GetDNS()
 
 
+		//TODO:  stats, error handling etc?
+		log.Infof("%#v", dns)
 		var translation translation
-		d.parser.ParseInto(dns, &translation, &dnsPacketInfo{})
-		log.Infof("parsed packet: %v", translation)
+		if err := d.parser.ParseInto(dns, &translation, &dnsPacketInfo{}) ; err != nil {
+			log.Errorf("error parsing packet: %v", err)
+		} else {
+			d.cache.Add(&translation, time.Now())
+		}
+		log.Infof("parsed packet: %#v", translation)
 	}
 }

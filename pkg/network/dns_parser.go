@@ -45,7 +45,7 @@ func newDNSParser(collectDNSStats bool, collectDNSDomains bool) *dnsParser {
 	}
 
 	return &dnsParser{
-		decoder:           gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, stack...),
+		decoder:           gopacket.NewDecodingLayerParser(layers.LayerTypeIPv4, stack...), // HACKHACKHACK TODO: use LayerTypeEthernet in linux, and LayerTypeIPv4 in windows, or only intercept at IP layer for linux ?
 		ipv4Payload:       ipv4Payload,
 		ipv6Payload:       ipv6Payload,
 		udpPayload:        udpPayload,
