@@ -80,6 +80,7 @@ type DriverInterface struct {
 
 	driverFlowHandle  *DriverHandle
 	driverStatsHandle *DriverHandle
+	driverDNSHandle   *DriverHandle
 
 	path                  string
 	enableMonotonicCounts bool
@@ -105,6 +106,11 @@ func NewDriverInterface(enableMonotonicCounts bool, bufferSize int) (*DriverInte
 	err = dc.setupStatsHandle()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating stats handle")
+	}
+
+	err = dc.setupDNSHandle()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating DNS handle")
 	}
 
 	return dc, nil
@@ -163,6 +169,30 @@ func (di *DriverInterface) setupStatsHandle() error {
 	di.driverStatsHandle = dh
 	return nil
 
+}
+
+func (di *DriverInterface) setupDNSHandle() error {
+	h, err := di.generateDriverHandle()
+	if err != nil {
+		return err
+	}
+
+	dh, err := NewDriverHandle(h, DataHandle)
+	if err != nil {
+		return err
+	}
+
+	filters, err := createDNSFilters()
+	if err != nil {
+		return err
+	}
+
+	if err := dh.setDataFilters(filters); err != nil {
+		return err
+	}
+
+	di.driverDNSHandle = dh
+	return nil
 }
 
 // generateDriverHandle creates a new windows handle attached to the driver
@@ -279,6 +309,36 @@ func resizeDriverBuffer(compareSize int, buffer []uint8) []uint8 {
 	return buffer
 }
 
+
+// GetDNS returns a raw IP packet that wraps a DNS packet
+func (di *DriverInterface) GetDNS() []byte {
+
+	buffer := make([]byte, 2048)
+	var bytesRead uint32
+
+	_ = windows.ReadFile(di.driverDNSHandle.handle, buffer, &bytesRead, nil)
+
+	if bytesRead == 0 {
+		log.Errorf("read nothing")
+		return nil
+	}
+
+	// TODO: check if err is windows.ERROR_MORE_DATA
+
+	// read a filter packet header
+	// fph := (*C.struct_filterPacketHeader)(unsafe.Pointer(&(buffer[0])))
+
+	// read an ip packet header
+	start := C.sizeof_struct_filterPacketHeader
+	// var iph ipv4.Header
+	// if err := iph.Parse(buffer[start:]); err != nil {
+	// 	log.Errorf("error parsing ip header: %v", err)
+	// }
+
+	return buffer[start:]
+}
+
+
 // DriverHandle struct stores the windows handle for the driver as well as information about what type of filter is set
 type DriverHandle struct {
 	handle     windows.Handle
@@ -295,6 +355,22 @@ func (dh *DriverHandle) setFilters(filters []C.struct__filterDefinition) error {
 	for _, filter := range filters {
 		err := windows.DeviceIoControl(dh.handle,
 			C.DDNPMDRIVER_IOCTL_SET_FLOW_FILTER,
+			(*byte)(unsafe.Pointer(&filter)),
+			uint32(unsafe.Sizeof(filter)),
+			(*byte)(unsafe.Pointer(&id)),
+			uint32(unsafe.Sizeof(id)), nil, nil)
+		if err != nil {
+			return fmt.Errorf("failed to set filter: %v", err)
+		}
+	}
+	return nil
+}
+
+func (dh *DriverHandle) setDataFilters(filters []C.struct__filterDefinition) error {
+	var id int64
+	for _, filter := range filters {
+		err := windows.DeviceIoControl(dh.handle,
+			C.DDNPMDRIVER_IOCTL_SET_DATA_FILTER,
 			(*byte)(unsafe.Pointer(&filter)),
 			uint32(unsafe.Sizeof(filter)),
 			(*byte)(unsafe.Pointer(&id)),
@@ -394,6 +470,34 @@ func createFlowHandleFilters() (filters []C.struct__filterDefinition, err error)
 		// Set ipv6
 		filters = append(filters, newDDAPIFilter(C.DIRECTION_OUTBOUND, C.FILTER_LAYER_TRANSPORT, iface.Index, false))
 		filters = append(filters, newDDAPIFilter(C.DIRECTION_INBOUND, C.FILTER_LAYER_TRANSPORT, iface.Index, false))
+	}
+
+	return filters, nil
+}
+
+func createDNSFilters() ([]C.struct__filterDefinition, error) {
+
+	var filters []C.struct__filterDefinition
+
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range ifaces {
+		filters = append(filters, C.struct__filterDefinition{
+
+			filterVersion: C.DD_NPMDRIVER_SIGNATURE,
+			size: C.sizeof_struct__filterDefinition,
+			filterLayer: C.FILTER_LAYER_TRANSPORT,
+			af: windows.AF_INET,
+			remotePort: 53,
+			v4InterfaceIndex: (C.ulonglong)(iface.Index), 
+			// direction
+			// port
+			// udp
+			// ipv4
+		})	
 	}
 
 	return filters, nil
