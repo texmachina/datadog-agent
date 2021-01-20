@@ -75,11 +75,11 @@ func NewTracer(config *config.Config) (*Tracer, error) {
 		state:           state,
 		connStatsActive: network.NewDriverBuffer(512),
 		connStatsClosed: network.NewDriverBuffer(512),
-		reverseDNS:      network.NewDnsSnooperWindows(di),
+		reverseDNS:      network.NewSocketFilterSnooper(config, packetSrc),
 	}
 
 	go tr.expvarStats(tr.stopChan)
-	
+
 	return tr, nil
 }
 

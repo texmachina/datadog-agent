@@ -309,7 +309,6 @@ func resizeDriverBuffer(compareSize int, buffer []uint8) []uint8 {
 	return buffer
 }
 
-
 // GetDNS returns a raw IP packet that wraps a DNS packet
 func (di *DriverInterface) GetDNS() []byte {
 
@@ -337,7 +336,6 @@ func (di *DriverInterface) GetDNS() []byte {
 
 	return buffer[start:]
 }
-
 
 // DriverHandle struct stores the windows handle for the driver as well as information about what type of filter is set
 type DriverHandle struct {
@@ -487,17 +485,17 @@ func createDNSFilters() ([]C.struct__filterDefinition, error) {
 	for _, iface := range ifaces {
 		filters = append(filters, C.struct__filterDefinition{
 
-			filterVersion: C.DD_NPMDRIVER_SIGNATURE,
-			size: C.sizeof_struct__filterDefinition,
-			filterLayer: C.FILTER_LAYER_TRANSPORT,
-			af: windows.AF_INET,
-			remotePort: 53,
-			v4InterfaceIndex: (C.ulonglong)(iface.Index), 
+			filterVersion:    C.DD_NPMDRIVER_SIGNATURE,
+			size:             C.sizeof_struct__filterDefinition,
+			filterLayer:      C.FILTER_LAYER_TRANSPORT,
+			af:               windows.AF_INET,
+			remotePort:       53,
+			v4InterfaceIndex: (C.ulonglong)(iface.Index),
 			// direction
 			// port
 			// udp
 			// ipv4
-		})	
+		})
 	}
 
 	return filters, nil
