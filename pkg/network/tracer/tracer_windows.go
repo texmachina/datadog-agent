@@ -68,6 +68,13 @@ func NewTracer(config *config.Config) (*Tracer, error) {
 		config.CollectDNSDomains,
 	)
 
+	packetSrc := network.NewPacketSource(di)
+
+	reverseDNS, err :=  network.NewSocketFilterSnooper(config, packetSrc)
+	if err != nil {
+		return nil, err
+	}
+
 	tr := &Tracer{
 		driverInterface: di,
 		stopChan:        make(chan struct{}),
@@ -75,7 +82,7 @@ func NewTracer(config *config.Config) (*Tracer, error) {
 		state:           state,
 		connStatsActive: network.NewDriverBuffer(512),
 		connStatsClosed: network.NewDriverBuffer(512),
-		reverseDNS:      network.NewSocketFilterSnooper(config, packetSrc),
+		reverseDNS:      reverseDNS,
 	}
 
 	go tr.expvarStats(tr.stopChan)
