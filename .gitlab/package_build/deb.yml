@@ -40,6 +40,7 @@
     - $S3_CP_CMD $OMNIBUS_BASE_DIR/pkg/datadog-agent_*_${PACKAGE_ARCH}.deb $S3_ARTIFACTS_URI/$DESTINATION_DEB
     - $S3_CP_CMD $OMNIBUS_BASE_DIR/pkg/datadog-agent-dbg_*_${PACKAGE_ARCH}.deb $S3_ARTIFACTS_URI/$DESTINATION_DBG_DEB
     - mkdir -p $OMNIBUS_PACKAGE_DIR && cp $OMNIBUS_BASE_DIR/pkg/datadog-agent*_${PACKAGE_ARCH}.deb{,.metadata.json} $OMNIBUS_PACKAGE_DIR
+    - cp $OMNIBUS_BASE_DIR/pkg/dependency-graph*.txt $OMNIBUS_PACKAGE_DIR
   artifacts:
     expire_in: 2 weeks
     paths:
@@ -141,6 +142,7 @@ agent_deb-arm64-a7:
     - find $OMNIBUS_BASE_DIR/pkg -name "datadog-iot-agent*_${PACKAGE_ARCH}.deb" -exec dpkg -c {} \;
     - $S3_CP_CMD $OMNIBUS_BASE_DIR/pkg/datadog-iot-agent*_${PACKAGE_ARCH}.deb $S3_ARTIFACTS_URI/$DESTINATION_DEB
     - mkdir -p $OMNIBUS_PACKAGE_DIR && cp $OMNIBUS_BASE_DIR/pkg/datadog-iot-agent*_${PACKAGE_ARCH}.deb{,.metadata.json} $OMNIBUS_PACKAGE_DIR
+    - cp $OMNIBUS_BASE_DIR/pkg/dependency-graph*.txt $OMNIBUS_PACKAGE_DIR
   artifacts:
     expire_in: 2 weeks
     paths:
@@ -200,6 +202,7 @@ dogstatsd_deb-x64:
     - find $OMNIBUS_BASE_DIR/pkg -name "datadog-dogstatsd*_amd64.deb" -exec dpkg -c {} \;
     - $S3_CP_CMD $OMNIBUS_BASE_DIR/pkg/datadog-dogstatsd*_amd64.deb $S3_ARTIFACTS_URI/datadog-dogstatsd_amd64.deb
     - mkdir -p $OMNIBUS_PACKAGE_DIR && cp $OMNIBUS_BASE_DIR/pkg/datadog-dogstatsd*_amd64.deb{,.metadata.json} $OMNIBUS_PACKAGE_DIR
+    - cp $OMNIBUS_BASE_DIR/pkg/dependency-graph*.txt $OMNIBUS_PACKAGE_DIR
   artifacts:
     expire_in: 2 weeks
     paths:

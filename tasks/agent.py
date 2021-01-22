@@ -485,11 +485,25 @@ def omnibus_build(
         if pfxfile:
             os.remove(pfxfile)
 
+        cmd = "{omnibus} graph {project_name} --log-level={log_level} {populate_s3_cache} {overrides}"
+        args = {
+            "omnibus": omnibus,
+            "project_name": target_project,
+            "log_level": log_level,
+            "overrides": overrides_cmd,
+            "populate_s3_cache": "",
+        }
+        graph_start = datetime.datetime.now()
+        ctx.run(cmd.format(**args), env=env)
+        graph_done = datetime.datetime.now()
+        graph_elapsed = graph_done - graph_start
+
         print("Build compoonent timing:")
         if not skip_deps:
             print("Deps:    {}".format(deps_elapsed))
         print("Bundle:  {}".format(bundle_elapsed))
         print("Omnibus: {}".format(omnibus_elapsed))
+        print("Graph: {}".format(graph_elapsed))
 
 
 @task
