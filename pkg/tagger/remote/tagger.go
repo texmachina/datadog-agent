@@ -63,7 +63,7 @@ func (t *Tagger) Init() error {
 
 	t.ctx, t.cancel = context.WithCancel(context.Background())
 
-	token, err := security.FetchAuthToken()
+	token, err := security.CreateOrFetchToken()
 	if err != nil {
 		return fmt.Errorf("unable to fetch authentication token: %w", err)
 	}
@@ -131,7 +131,11 @@ func (t *Tagger) Tag(entityID string, cardinality collectors.TagCardinality) ([]
 		return nil, err
 	}
 
-	return entity.GetTags(cardinality), nil
+	if entity != nil {
+		return entity.GetTags(cardinality), nil
+	}
+
+	return []string{}, nil
 }
 
 // Standard returns the standard tags for a given entity.
@@ -265,7 +269,16 @@ func (t *Tagger) startTaggerStream(maxElapsed time.Duration) error {
 		default:
 		}
 
-		var err error
+		token, err := security.FetchAuthToken()
+		if err != nil {
+			return fmt.Errorf("unable to fetch authentication token: %w", err)
+		}
+
+		md := metadata.MD{
+			"authorization": []string{fmt.Sprintf("Bearer %s", token)},
+		}
+		t.ctx = metadata.NewOutgoingContext(t.ctx, md)
+
 		t.stream, err = t.client.TaggerStreamEntities(t.ctx, &pb.StreamTagsRequest{
 			Cardinality: pb.TagCardinality_HIGH,
 		})
